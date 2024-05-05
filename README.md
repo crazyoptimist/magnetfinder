@@ -1,6 +1,8 @@
-# magnetfinder
+# Magnet Finder
 
-Multi-threaded CLI torrent aggregator; scrapes torrent results from multiple websites and delivers them into a table in your terminal!
+This is a fork of https://github.com/xel86/magnetfinder.
+
+This is a CLI application that scrapes torrent results from multiple websites and displays them in a table within your terminal.
 
 Supported Websites:
 - nyaa 
@@ -18,35 +20,37 @@ Supported torrent client for autodownloads:
 
 Running magnetfinder without any arguments will launch interactive mode, prompting for similar information set by flags.
 
-#### Flags/Arguments<br>
-```-q, --query <query>``` search query to use<br>
-```-n, --nyaa``` scrape nyaa for torrents<br>
-```-p, --piratebay``` scrape piratebay for torrents<br>
-```-y, --yts``` get torrents from YIFY/YTS<br>
-```-a, --all``` scrape all available websites together<br>
-```-d, --download``` autodownload the torrent(s) selected<br>
-```--depth <depth>```  specifies how many pages to search through for each website, default is 1<br>
-```--dir <directory>``` directory to download torrent if autodownload was toggled<br>
-```--sort <seeds/size>``` allows you to specifiy if the torrent table is sorted by seeders or size<br>
-```--proxy <proxy url>``` allows you to set a proxy to use when making web requests to torrent websites & api<br>
-```--show <num>``` truncate list of torrents displayed by the number argument given<br>
-```--no-interactive``` displays all torrents with magnet directly without interacting (--show is useful here)
+#### Command Line Arguments
+
+- `q, --query <query>`: search query to use
+- `n, --nyaa`: scrape nyaa for torrents
+- `p, --piratebay`: scrape piratebay for torrents
+- `y, --yts`: get torrents from YIFY/YTS
+- `a, --all`: scrape all available websites together
+- `d, --download`: autodownload the torrent(s) selected
+- `--depth <depth>`: specifies how many pages to search through for each website, default is 1
+- `--dir <directory>`: directory to download torrent if autodownload was toggled
+- `--sort <seeds/size>`: allows you to specify if the torrent table is sorted by seeders or size
+- `--proxy <proxy url>`: allows you to set a proxy to use when making web requests to torrent websites & api
+- `--show <num>`: truncate list of torrents displayed by the number argument given
+- `--no-interactive`: displays all torrents with magnet directly without interacting (--show is useful here)
   
 #### Configuration
 
-Settings.toml (for setting default behavior, such as download directories & autodownload) is located in an OS specific directory:<br>
-```~/.config/magnetfinder/``` on Linux<br>
-```/AppData/Roaming/magnetfinder``` on Windows<br>
-```/Library/Application Support/magnetfinder/``` on macOS<br>
-  
+Settings.toml (for a default configuration, such as download directories & autodownload) is located in an OS specific directory:
+
+- `~/.config/magnetfinder/` on Linux
+- `/AppData/Roaming/magnetfinder` on Windows
+- `/Library/Application Support/magnetfinder/` on MacOS
 
 ## Installation
-First install rust if you haven't already: https://www.rust-lang.org/tools/install<br>
 
-From Cargo/Crate: ```cargo install magnetfinder```<br>
+#### Using Cargo
 
-From Source: 
-- ```git clone https://github.com/bleusakura/magnetfinder.git``` then ```cargo build --release```
-- After building, the binary will be located in ```./target/release/```, which can then be moved elsewhere.
+```bash
+cargo install magnetfinder
+```
 
-You can also decide to skip compiling and download a binary from the [releases section](https://github.com/bleusakura/magnetfinder/releases)
+#### Download Prebuilt Binaries
+
+Coming soon...

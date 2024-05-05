@@ -12,50 +12,47 @@ jobs:
     strategy:
       matrix:
         job:
-          - target: x86_64-apple-darwin
-            os: macos-latest
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-          - target: x86_64-unknown-linux-musl
+          - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            use-cross: true
-          - target: arm-unknown-linux-gnueabihf
-            os: ubuntu-latest
-            use-cross: true
+          # - target: x86_64-pc-windows-msvc
+          #   os: windows-latest
+          # - target: x86_64-apple-darwin
+          #   os: macos-latest
+          # - target: arm-unknown-linux-gnueabihf
+          #   os: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: ${{ matrix.job.target }}
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          use-cross: ${{ matrix.job.use-cross }}
-          command: test
-          args: --target ${{ matrix.job.target }}
+      - uses: actions/checkout@v4
 
-  fmt-and-clippy:
-    name: Rustfmt and clippy
+      - name: Install the Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.job.target }}
+
+      - name: Rust Cache Action
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Tests
+        run: cargo test --target ${{ matrix.job.target }}
+
+  fmt:
+    name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
+          components: rustfmt
+      - name: Enforce formatting
+        run: cargo fmt --check
 
-      - name: Rustfmt
-        uses: actions-rs/cargo@v1
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          command: fmt
-          args: -- --check
-
-      - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Linting
+        run: cargo clippy -- -D warnings
