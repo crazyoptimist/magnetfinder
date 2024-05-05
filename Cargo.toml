@@ -1,12 +1,12 @@
 [package]
 name = "magnetfinder"
 version = "0.4.0"
-authors = ["bleusakura"]
+authors = ["bleusakura", "crazyoptimist"]
 edition = "2018"
 license = "GPL-3.0"
-homepage = "https://github.com/bleusakura/magnetfinder"
-repository = "https://github.com/bleusakura/magnetfinder"
-description = "Multi-threaded CLI torrent scraper & aggregator"
+homepage = "https://github.com/crazyoptimist/magnetfinder"
+repository = "https://github.com/crazyoptimist/magnetfinder"
+description = "CLI Application for Finding Torrent Magnets on the Internet"
 keywords = ["cli", "torrent"]
 categories = ["command-line-utilities"]
 
@@ -21,4 +21,3 @@ directories = "3.0.2"
 clap = "2.33.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-

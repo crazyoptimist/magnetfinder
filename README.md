@@ -1,4 +1,5 @@
 # magnetfinder
+
 Multi-threaded CLI torrent aggregator; scrapes torrent results from multiple websites and delivers them into a table in your terminal!
 
 Supported Websites:
