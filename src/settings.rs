@@ -9,27 +9,27 @@ use crate::Settings;
 
 impl Settings {
     pub fn fetch() -> Result<Settings, ConfigError> {
-        let mut s = Config::default();
+        let builder = Config::builder();
 
-        if let Some(proj_dirs) = ProjectDirs::from("", "", "magnetfinder") {
+        let builder = if let Some(proj_dirs) = ProjectDirs::from("", "", "magnetfinder") {
             let config_path = proj_dirs.config_dir();
             let mut config_path = config_path.to_path_buf();
             config_path.push("Settings.toml");
 
-            s.merge(File::from(config_path))?;
+            builder.add_source(File::from(config_path))
         } else {
             eprintln!("Error finding project config directory, falling back to executable path");
             match env::current_exe() {
                 Ok(mut exe_path) => {
                     exe_path.pop();
                     exe_path.push("Settings.toml");
-                    s.merge(File::from(exe_path))?;
+                    builder.add_source(File::from(exe_path))
                 }
-                Err(_) => {
-                    s.merge(File::with_name("Settings"))?;
-                }
-            };
-        }
+                Err(_) => builder.add_source(File::with_name("Settings")),
+            }
+        };
+
+        let s = builder.build()?;
 
         let default_proxy = s
             .get::<String>("default_proxy")

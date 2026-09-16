@@ -4,7 +4,7 @@ use ureq::Agent;
 
 #[test]
 fn piratebay_produces_results() {
-    let results = piratebay::fetch_page_results(&Agent::new(), "episode", 1).unwrap();
+    let results = piratebay::fetch_page_results(&Agent::new_with_defaults(), "episode", 1).unwrap();
 
     assert!(!results.is_empty(), "returned torrent vector was empty");
 

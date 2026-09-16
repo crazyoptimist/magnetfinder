@@ -2,11 +2,10 @@ use std::io;
 use std::process;
 use std::sync::Arc;
 
-use clap::ArgMatches;
-use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::{ContentArrangement, Table};
 
+use crate::cli::Cli;
 use crate::{Settings, Sort, Torrent, UserParameters};
 
 impl Sort {
@@ -19,7 +18,7 @@ impl Sort {
 }
 
 impl UserParameters {
-    pub fn get_params(args: ArgMatches) -> UserParameters {
+    pub fn get_params(args: Cli) -> UserParameters {
         if !args_present(&args) {
             UserParameters::prompt()
         } else {
@@ -51,7 +50,7 @@ impl UserParameters {
     }
 
     // parses provided cmd arguments bypassing user interface prompt
-    fn fetch(args: ArgMatches) -> UserParameters {
+    fn fetch(args: Cli) -> UserParameters {
         let config_settings = match Settings::fetch() {
             Ok(s) => s,
             Err(_) => {
@@ -63,25 +62,19 @@ impl UserParameters {
             }
         };
 
-        let search_query = Arc::new(String::from(args.value_of("query").unwrap_or_else(|| {
+        let search_query = Arc::new(args.query.unwrap_or_else(|| {
             eprintln!("Must provide a valid search query (-q/--query \"search term\")");
             process::exit(1);
-        })));
+        }));
 
-        let search_depth: u32 = match args.value_of("depth") {
-            Some(n) => n.trim().parse().unwrap_or(1),
-            None => 1,
-        };
+        let search_depth = args.depth.unwrap_or(1);
 
-        let sort_preference = Sort::new(args.value_of("sort").unwrap_or("seeds"));
+        let sort_preference = Sort::new(args.sort.as_deref().unwrap_or("seeds"));
 
-        let num_torrents_shown: usize = match args.value_of("num_torrents_shown") {
-            Some(n) => n.trim().parse().unwrap_or(usize::MAX),
-            None => usize::MAX,
-        };
+        let num_torrents_shown = args.num_torrents_shown.unwrap_or(usize::MAX);
 
-        let proxy = match args.value_of("proxy") {
-            Some(p) => Arc::new(String::from(p)),
+        let proxy = match args.proxy {
+            Some(p) => Arc::new(p),
             None => Arc::new(config_settings.default_proxy),
         };
 
@@ -91,7 +84,7 @@ impl UserParameters {
             sort_preference,
             num_torrents_shown,
             proxy,
-            no_interactive: args.is_present("no-interactive"),
+            no_interactive: args.no_interactive,
         }
     }
 
@@ -117,8 +110,7 @@ pub fn display_torrent_table(torrents: &[Torrent]) -> Vec<&String> {
         let mut table = Table::new();
 
         table
-            .load_preset(UTF8_FULL)
-            .apply_modifier(UTF8_ROUND_CORNERS)
+            .load_style(UTF8_FULL.with_rounded_corners())
             .set_content_arrangement(ContentArrangement::Dynamic)
             .set_header(vec!["#", "Name", "Size", "Seeds"]);
 
@@ -205,6 +197,6 @@ fn collect_magnet_links<'a>(
     Ok(magnets)
 }
 
-fn args_present(args: &ArgMatches) -> bool {
-    args.is_present("query")
+fn args_present(args: &Cli) -> bool {
+    args.query.is_some()
 }

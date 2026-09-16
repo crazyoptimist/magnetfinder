@@ -1,7 +1,7 @@
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::{Arc, mpsc::Sender};
 use std::thread;
 
-use scraper::{element_ref::ElementRef, Html, Selector};
+use scraper::{Html, Selector, element_ref::ElementRef};
 use ureq::Agent;
 
 use crate::Torrent;
@@ -35,11 +35,7 @@ pub fn fetch_page_results(
         "https://www.tpb.party/search/{}/{}/99/0",
         formatted_query, page_number
     );
-    let body = client
-        .get(&url)
-        .call()?
-        .into_string()
-        .map_err(ureq::Error::from)?;
+    let body = client.get(&url).call()?.body_mut().read_to_string()?;
 
     let document = Html::parse_document(&body);
     let selector = Selector::parse("tbody tr").unwrap();

@@ -1,22 +1,23 @@
+pub mod cli;
 pub mod interface;
 pub mod piratebay;
 pub mod settings;
 pub mod types;
 
 use std::cmp::Reverse;
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc, mpsc};
 
-use clap::ArgMatches;
-use ureq::{Agent, AgentBuilder};
+use cli::Cli;
+use ureq::Agent;
 
 use types::{Settings, Sort, Torrent, UserParameters};
 
-pub fn run(args: ArgMatches) {
+pub fn run(args: Cli) {
     let user_parameters = UserParameters::get_params(args);
 
     let client = Arc::new(match build_http_client(&user_parameters.proxy) {
         Ok(client) => client,
-        Err(_) => Agent::new(),
+        Err(_) => Agent::new_with_defaults(),
     });
 
     let (tx, rx) = mpsc::channel();
@@ -61,8 +62,11 @@ pub fn run(args: ArgMatches) {
 
 fn build_http_client(proxy: &str) -> Result<Agent, Box<ureq::Error>> {
     if proxy.is_empty() {
-        Ok(Agent::new())
+        Ok(Agent::new_with_defaults())
     } else {
-        Ok(AgentBuilder::new().proxy(ureq::Proxy::new(proxy)?).build())
+        let config = Agent::config_builder()
+            .proxy(Some(ureq::Proxy::new(proxy)?))
+            .build();
+        Ok(Agent::new_with_config(config))
     }
 }
