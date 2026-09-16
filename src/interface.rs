@@ -1,7 +1,5 @@
 use std::io;
-use std::path::PathBuf;
 use std::process;
-use std::rc::Rc;
 use std::sync::Arc;
 
 use clap::ArgMatches;
@@ -9,56 +7,13 @@ use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::{ContentArrangement, Table};
 
-use crate::{Media, Settings, Sort, Torrent, TorrentClient, UserParameters, Website};
-
-impl Website {
-    fn new(s: &str) -> Result<Vec<Website>, &'static str> {
-        match s.trim().to_lowercase().as_str() {
-            "nyaa" => Ok(vec![Website::Nyaa]),
-            "piratebay" => Ok(vec![Website::Piratebay]),
-            "yts" => Ok(vec![Website::YTS]),
-            "all" => Ok(vec![Website::Nyaa, Website::Piratebay, Website::YTS]),
-            _ => Err("Unknown website, supported sites: nyaa, piratebay"),
-        }
-    }
-}
-
-impl Media {
-    fn new(s: &str) -> Result<Media, &'static str> {
-        match s.trim().to_lowercase().as_str() {
-            "anime" => Ok(Media::Anime),
-            "movie" => Ok(Media::Movie),
-            "tvshow" => Ok(Media::TVShow),
-            "tv" => Ok(Media::TVShow),
-            _ => Err("Unknown media type, supported types: anime, movie, tvshow"),
-        }
-    }
-
-    fn path(&self, settings: &Settings) -> Rc<PathBuf> {
-        match self {
-            Media::Anime => Rc::clone(&settings.anime_dir),
-            Media::Movie => Rc::clone(&settings.movie_dir),
-            Media::TVShow => Rc::clone(&settings.tvshow_dir),
-        }
-    }
-}
+use crate::{Settings, Sort, Torrent, UserParameters};
 
 impl Sort {
     fn new(s: &str) -> Sort {
         match s.to_lowercase().as_str() {
             "size" => Sort::Size,
             _ => Sort::Seeds,
-        }
-    }
-}
-
-impl TorrentClient {
-    fn new(s: &str) -> TorrentClient {
-        match s.to_lowercase().as_str() {
-            "deluge" => TorrentClient::Deluge,
-            "transmission" => TorrentClient::Transmission,
-            "qbittorrent" | "qbt" => TorrentClient::QBittorrent,
-            _ => TorrentClient::Unknown,
         }
     }
 }
@@ -86,35 +41,17 @@ impl UserParameters {
         };
 
         UserParameters {
-            websites: UserParameters::get_websites(),
-            directory: UserParameters::get_media().path(&settings),
             search_query: UserParameters::get_search_query(),
             search_depth: 1,
             sort_preference: Sort::new("seeds"),
             num_torrents_shown: usize::MAX,
             proxy: Arc::new(settings.default_proxy),
-            autodownload: settings.autodownload,
-            torrent_client: TorrentClient::new(&settings.torrent_client),
             no_interactive: false,
         }
     }
 
     // parses provided cmd arguments bypassing user interface prompt
     fn fetch(args: ArgMatches) -> UserParameters {
-        let mut websites: Vec<Website> = Vec::new();
-        if args.is_present("nyaa") {
-            websites.push(Website::Nyaa);
-        }
-        if args.is_present("piratebay") {
-            websites.push(Website::Piratebay);
-        }
-        if args.is_present("yts") {
-            websites.push(Website::YTS);
-        }
-        if args.is_present("all") {
-            websites = Website::new("all").unwrap();
-        }
-
         let config_settings = match Settings::fetch() {
             Ok(s) => s,
             Err(_) => {
@@ -126,33 +63,15 @@ impl UserParameters {
             }
         };
 
-        if websites.is_empty() {
-            eprintln!(
-                "Must select website to scrape from, -n for nyaa, -p for piratebay, -a for all"
-            );
+        let search_query = Arc::new(String::from(args.value_of("query").unwrap_or_else(|| {
+            eprintln!("Must provide a valid search query (-q/--query \"search term\")");
             process::exit(1);
-        }
-
-        let directory = match args.value_of("directory") {
-            Some(d) => {
-                let mut path = Rc::new(PathBuf::from(d));
-                if !path.is_dir() {
-                    path = config_settings.default_directory
-                }
-                path
-            }
-            None => config_settings.default_directory,
-        };
+        })));
 
         let search_depth: u32 = match args.value_of("depth") {
             Some(n) => n.trim().parse().unwrap_or(1),
             None => 1,
         };
-
-        let search_query = Arc::new(String::from(args.value_of("query").unwrap_or_else(|| {
-            eprintln!("Must provide a valid search query (-q/--query \"search term\")");
-            process::exit(1);
-        })));
 
         let sort_preference = Sort::new(args.value_of("sort").unwrap_or("seeds"));
 
@@ -166,61 +85,13 @@ impl UserParameters {
             None => Arc::new(config_settings.default_proxy),
         };
 
-        let torrent_client = TorrentClient::new(&config_settings.torrent_client);
-
         UserParameters {
-            websites,
-            directory,
             search_query,
             search_depth,
             sort_preference,
             num_torrents_shown,
             proxy,
-            autodownload: args.is_present("download"),
-            torrent_client,
             no_interactive: args.is_present("no-interactive"),
-        }
-    }
-
-    fn get_websites() -> Vec<Website> {
-        loop {
-            let mut input = String::new();
-            println!("Website(s) to search from? (nyaa, piratebay, yts, all)");
-
-            io::stdin()
-                .read_line(&mut input)
-                .expect("io error: failed to read website input");
-
-            let websites = match Website::new(&input) {
-                Ok(website) => website,
-                Err(err) => {
-                    println!("{}", err);
-                    continue;
-                }
-            };
-
-            return websites;
-        }
-    }
-
-    fn get_media() -> Media {
-        loop {
-            let mut input = String::new();
-            println!("Type of media? (anime, movie, tvshow)");
-
-            io::stdin()
-                .read_line(&mut input)
-                .expect("io error: failed to read media type input");
-
-            let type_of_media = match Media::new(&input) {
-                Ok(media) => media,
-                Err(err) => {
-                    println!("{}", err);
-                    continue;
-                }
-            };
-
-            return type_of_media;
         }
     }
 
@@ -335,10 +206,5 @@ fn collect_magnet_links<'a>(
 }
 
 fn args_present(args: &ArgMatches) -> bool {
-    args.is_present("nyaa")
-        || args.is_present("piratebay")
-        || args.is_present("all")
-        || args.is_present("download")
-        || args.is_present("directory")
-        || args.is_present("query")
+    args.is_present("query")
 }

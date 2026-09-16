@@ -70,7 +70,7 @@ pub fn fetch_page_results(
 }
 
 fn get_title(table_row: &ElementRef) -> Option<String> {
-    let selector = Selector::parse(".detLink").unwrap();
+    let selector = Selector::parse("a[href*='/torrent/']").unwrap();
 
     let title = match table_row.select(&selector).next() {
         Some(t) => t.inner_html(),
@@ -106,16 +106,10 @@ fn get_magnet(table_row: &ElementRef) -> Option<String> {
 }
 
 fn get_size(table_row: &ElementRef) -> Option<String> {
-    let selector = Selector::parse(".detDesc").unwrap();
+    let selector = Selector::parse("td[align='right']").unwrap();
 
-    let desc = match table_row.select(&selector).next() {
-        Some(s) => s.inner_html(),
-        None => return None,
-    };
-
-    let split: Vec<&str> = desc.split(", ").collect();
-    let size = match split.get(1) {
-        Some(s) => s.replace("Size ", "").replace("&nbsp;", " "),
+    let size = match table_row.select(&selector).next() {
+        Some(s) => s.inner_html().replace("&nbsp;", " "),
         None => return None,
     };
 
@@ -123,9 +117,9 @@ fn get_size(table_row: &ElementRef) -> Option<String> {
 }
 
 fn get_seeders(table_row: &ElementRef) -> Option<String> {
-    let selector = Selector::parse("td").unwrap();
+    let selector = Selector::parse("td[align='right']").unwrap();
 
-    let seeders = match table_row.select(&selector).nth(2) {
+    let seeders = match table_row.select(&selector).nth(1) {
         Some(s) => s.inner_html(),
         None => return None,
     };

@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::Arc;
 
 pub struct Torrent {
@@ -36,49 +34,21 @@ impl Torrent {
     }
 }
 
-pub enum Website {
-    Nyaa,
-    Piratebay,
-    YTS,
-}
-
-pub enum Media {
-    Anime,
-    Movie,
-    TVShow,
-}
-
 pub enum Sort {
     Size,
     Seeds,
 }
 
-pub enum TorrentClient {
-    Deluge,
-    Transmission,
-    QBittorrent,
-    Unknown,
-}
-
+#[derive(Default)]
 pub struct Settings {
-    pub anime_dir: Rc<PathBuf>,
-    pub tvshow_dir: Rc<PathBuf>,
-    pub movie_dir: Rc<PathBuf>,
-    pub default_directory: Rc<PathBuf>,
     pub default_proxy: String,
-    pub autodownload: bool,
-    pub torrent_client: String,
 }
 
 pub struct UserParameters {
-    pub websites: Vec<Website>,
-    pub directory: Rc<PathBuf>,
     pub search_query: Arc<String>,
     pub search_depth: u32,
     pub sort_preference: Sort,
     pub num_torrents_shown: usize,
     pub proxy: Arc<String>,
-    pub autodownload: bool,
-    pub torrent_client: TorrentClient,
     pub no_interactive: bool,
 }
