@@ -27,7 +27,7 @@ pub fn fetch_page_results(
     client: &Agent,
     query: &str,
     page_number: u32,
-) -> Result<Vec<Torrent>, ureq::Error> {
+) -> Result<Vec<Torrent>, Box<ureq::Error>> {
     let mut results = Vec::new();
 
     let formatted_query = query.replace(" ", "%20");
@@ -35,7 +35,11 @@ pub fn fetch_page_results(
         "https://www.tpb.party/search/{}/{}/99/0",
         formatted_query, page_number
     );
-    let body = client.get(&url).call()?.into_string()?;
+    let body = client
+        .get(&url)
+        .call()?
+        .into_string()
+        .map_err(ureq::Error::from)?;
 
     let document = Html::parse_document(&body);
     let selector = Selector::parse("tbody tr").unwrap();
@@ -72,10 +76,7 @@ pub fn fetch_page_results(
 fn get_title(table_row: &ElementRef) -> Option<String> {
     let selector = Selector::parse("a[href*='/torrent/']").unwrap();
 
-    let title = match table_row.select(&selector).next() {
-        Some(t) => t.inner_html(),
-        None => return None,
-    };
+    let title = table_row.select(&selector).next()?.inner_html();
 
     if title.is_empty() {
         return None;
@@ -87,16 +88,9 @@ fn get_title(table_row: &ElementRef) -> Option<String> {
 fn get_magnet(table_row: &ElementRef) -> Option<String> {
     let selector = Selector::parse("[alt='Magnet link']").unwrap();
 
-    let magnet = match table_row.select(&selector).next() {
-        Some(p) => match p.parent() {
-            Some(parent) => match parent.value().as_element().unwrap().attr("href") {
-                Some(m) => m,
-                None => return None,
-            },
-            None => return None,
-        },
-        None => return None,
-    };
+    let icon = table_row.select(&selector).next()?;
+    let anchor = icon.parent()?;
+    let magnet = anchor.value().as_element().unwrap().attr("href")?;
 
     if magnet.contains("magnet") {
         return Some(String::from(magnet));
@@ -108,10 +102,11 @@ fn get_magnet(table_row: &ElementRef) -> Option<String> {
 fn get_size(table_row: &ElementRef) -> Option<String> {
     let selector = Selector::parse("td[align='right']").unwrap();
 
-    let size = match table_row.select(&selector).next() {
-        Some(s) => s.inner_html().replace("&nbsp;", " "),
-        None => return None,
-    };
+    let size = table_row
+        .select(&selector)
+        .next()?
+        .inner_html()
+        .replace("&nbsp;", " ");
 
     Some(size)
 }
@@ -119,10 +114,7 @@ fn get_size(table_row: &ElementRef) -> Option<String> {
 fn get_seeders(table_row: &ElementRef) -> Option<String> {
     let selector = Selector::parse("td[align='right']").unwrap();
 
-    let seeders = match table_row.select(&selector).nth(1) {
-        Some(s) => s.inner_html(),
-        None => return None,
-    };
+    let seeders = table_row.select(&selector).nth(1)?.inner_html();
 
     Some(seeders)
 }

@@ -59,7 +59,7 @@ pub fn run(args: ArgMatches) {
     }
 }
 
-fn build_http_client(proxy: &str) -> Result<Agent, ureq::Error> {
+fn build_http_client(proxy: &str) -> Result<Agent, Box<ureq::Error>> {
     if proxy.is_empty() {
         Ok(Agent::new())
     } else {
