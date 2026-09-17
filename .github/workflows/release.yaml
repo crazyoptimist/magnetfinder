@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.job.target }})
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.job.target }}
+
+      - name: Rust Cache Action
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.job.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.job.target }}
+
+      - name: Package (unix)
+        if: matrix.job.archive == 'tar.gz'
+        shell: bash
+        run: |
+          staging="magnetfinder-${{ github.ref_name }}-${{ matrix.job.target }}"
+          mkdir "$staging"
+          cp target/${{ matrix.job.target }}/release/magnetfinder "$staging/"
+          cp README.md LICENSE "$staging/"
+          tar czf "$staging.tar.gz" "$staging"
+          echo "ASSET=$staging.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Package (windows)
+        if: matrix.job.archive == 'zip'
+        shell: bash
+        run: |
+          staging="magnetfinder-${{ github.ref_name }}-${{ matrix.job.target }}"
+          mkdir "$staging"
+          cp target/${{ matrix.job.target }}/release/magnetfinder.exe "$staging/"
+          cp README.md LICENSE "$staging/"
+          7z a "$staging.zip" "$staging"
+          echo "ASSET=$staging.zip" >> "$GITHUB_ENV"
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET }}
